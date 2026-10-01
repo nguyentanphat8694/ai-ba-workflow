@@ -149,3 +149,68 @@ manual audit these hints support.
   final document instead of each keeping a separate final file, so
   skipping either step, or running them in any order, never leaves
   `estimation` unsure which file is current.
+
+---
+
+## Cài đặt nhanh bằng `npx`
+
+Bộ harness này đi kèm một CLI nhỏ. Người dùng chỉ cần chạy một lệnh trong
+thư mục dự án của họ, chọn agent, và CLI sẽ tải đúng cấu trúc file về.
+
+### Cách dùng (người dùng cuối)
+
+Đứng trong thư mục dự án bạn muốn cài harness vào, rồi chạy:
+
+```bash
+# Nếu đã publish lên npm:
+npx ai-ba-workflow
+
+# Hoặc chạy thẳng từ GitHub, không cần publish:
+npx github:nguyentanphat8694/ai-ba-workflow
+```
+
+CLI sẽ hỏi bạn đang dùng agent nào:
+
+```
+Which agent are you using?
+  1) kiro    -> .kiro/steering/harness.md
+  2) claude  -> CLAUDE.md
+  3) gemini  -> GEMINI.md
+```
+
+Chọn 1 trong 3. CLI sẽ:
+
+1. Tải toàn bộ thư mục `harness/` (rule chung cho mọi workflow).
+2. Tải đúng file loader của agent đã chọn:
+   - `kiro`   → `.kiro/steering/harness.md`
+   - `claude` → `CLAUDE.md`
+   - `gemini` → `GEMINI.md`
+3. Tạo sẵn thư mục `inputs/` và `outputs/`.
+
+Chế độ không tương tác (ví dụ dùng trong script CI): truyền tên agent làm
+tham số —
+
+```bash
+npx ai-ba-workflow kiro
+npx github:nguyentanphat8694/ai-ba-workflow claude
+```
+
+Các file được tải trực tiếp từ nhánh `main` của repo
+`nguyentanphat8694/ai-ba-workflow`, nên bạn luôn nhận bản harness mới nhất.
+
+### Publish lên npm (chủ repo, làm một lần)
+
+Để lệnh ngắn `npx ai-ba-workflow` hoạt động, publish package lên npm:
+
+```bash
+npm login            # đăng nhập tài khoản npm (tạo tại npmjs.com nếu chưa có)
+npm publish --access public
+```
+
+Mỗi lần sửa CLI và muốn phát hành bản mới: tăng `version` trong
+`package.json` (hoặc `npm version patch`) rồi `npm publish` lại. Lưu ý: nội
+dung `harness/` KHÔNG nằm trong package npm — CLI tải nó từ GitHub lúc
+chạy, nên sửa harness chỉ cần `git push`, không cần publish lại.
+
+Nếu không muốn publish, bỏ qua bước này: người dùng vẫn chạy được bằng
+`npx github:nguyentanphat8694/ai-ba-workflow`.

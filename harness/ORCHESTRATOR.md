@@ -62,10 +62,10 @@ below.
 
    | Step | What it does | Depends on |
    |---|---|---|
-   | `rewrite` | Structures the raw draft into sections 1–10. No questions asked. | the raw input |
-   | `ba_review` | BA finds gaps/ambiguity, asks the user, finalizes into the shared `final_document`. | `final_document` → `rewrite` output → raw input |
-   | `team_review` | 5-persona feasibility/delivery review, same ask→finalize pattern, updates the same `final_document`. | `final_document` → `rewrite` output → raw input |
-   | `estimation` | T-shirt sizing per requirement. | `final_document` → raw input |
+   | `rewrite` | Structures the raw draft into sections 1–10. No questions asked. One output, no approval loop. | the raw input |
+   | `ba_review` | **Two separate approvals, two outputs:** (1) approve to run → writes a **draft** with `[OPEN: ...]` questions; (2) you answer them and approve again → *that* finalizes into the shared `final_document`. Choosing this step does **not** by itself produce the final document — see step 3 below for which of the two this invocation actually is. | `final_document` → `rewrite` output → raw input |
+   | `team_review` | Same two-approval, two-output pattern as `ba_review` (draft with persona findings → finalize into the same `final_document`). | `final_document` → `rewrite` output → raw input |
+   | `estimation` | T-shirt sizing per requirement. One output, no approval loop. | `final_document` → raw input |
 
 2. Ask which step to run. Any step, any order, including one already run
    (a re-run).
@@ -102,6 +102,25 @@ below.
    B/C of `ba_review`/`team_review`; it does not change what Phase A reads
    to *produce* the draft in the first place.
 
+   **Which phase does "choosing `ba_review`/`team_review`" actually mean
+   right now?** Decide this *before* step 5, since it changes what you
+   state in the plan:
+   - If this step's status for this input is `not_started` or `done`
+     (a fresh run / a re-run) → you are about to run **Phase A**. The
+     base file above is what Phase A reads to produce a **draft**. The
+     plan in step 5 must say the output is a *draft*, not the final
+     document — finalizing is a separate, later approval (Phase C),
+     triggered only once the user has answered the draft's
+     `[OPEN: ...]` questions and says "approve" again.
+   - If this step's status is `awaiting_approval` (the
+     self-continuation exception above) → the user is continuing an
+     existing draft. If they're asking a question or editing the draft,
+     stay in Phase B — no new approval needed yet. Only move to
+     **Phase C** (finalize) once they explicitly approve *that draft*.
+     The plan in step 5 for *this* approval must say the output is the
+     `final_document`, since this is the finalize call, not a fresh
+     Phase A run.
+
 4. **Scan the resolved base file** for genuinely unresolved open tags —
    `[OPEN: ...]` (from `rewrite`/`ba_review`) and `[OPEN (<Persona>): ...]`
    (from `team_review`) are both the same mechanic, just with an extra
@@ -113,13 +132,34 @@ below.
      acknowledging the step's output will inherit that ambiguity.
    - Do not pick for them.
 
-5. **State the plan plainly** before doing anything: *"Will run
-   `<step>` on `<base file path>`, output → `<output path(s) per the
-   naming convention below>`, language: <output_language>."* For
-   `ba_review`/`team_review`, say explicitly whether this run will
-   **create** a new `final_document` or **update the existing one** at
-   `<path>` — the user should know which before approving. Repeat any
-   warning from step 4 if the user chose to proceed anyway.
+5. **State the plan plainly** before doing anything, matching whichever
+   phase step 3 identified:
+
+   - **`rewrite` or `estimation`** (always one-shot, no draft/finalize
+     split): *"Will run `<step>` on `<base file path>`, output →
+     `<output path per the naming convention below>`, language:
+     <output_language>."*
+   - **`ba_review`/`team_review`, Phase A** (fresh run or re-run —
+     the common case when the user just says "run ba_review" or
+     "tiếp tục ba_review" with no draft already pending): *"Will run
+     `<step>` (draft phase) on `<base file path>`, output →
+     `outputs/[ba-review-draft or team-review-draft]-<basename>-
+     [<timestamp>].md`, language: <output_language>. This step does
+     **not** write the final document yet — the draft will contain
+     `[OPEN: ...]` questions; you answer them in the file, then approve
+     again to finalize."* Do **not** mention `final_document` creation
+     or update as this run's output — that only happens at the later,
+     separate Phase C approval.
+   - **`ba_review`/`team_review`, Phase C** (the user is approving an
+     existing `awaiting_approval` draft to finalize it): *"Draft
+     approved. Will finalize into the shared final document, output →
+     `outputs/[final]-<basename>-[<timestamp>].md`."* Say explicitly
+     whether this **creates** the first `final_document` for this input
+     or **updates** the existing one at `<path>` (and, if updating,
+     that the old `[final]-...` file will be deleted once the new one
+     validates — see "The final document" below).
+
+   Repeat any warning from step 4 if the user chose to proceed anyway.
 
 6. **Wait for explicit approval** ("approve", "yes", "go ahead"...) before
    invoking the step's instructions from `steps/0N-*.md`.

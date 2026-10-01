@@ -1,0 +1,33 @@
+{
+  "name": "ai-ba-workflow",
+  "version": "1.0.0",
+  "description": "Menu-driven 4-step BA spec harness that runs the same way on Kiro, Claude Code, and Gemini CLI. This CLI scaffolds the harness into your project for the agent you choose.",
+  "bin": {
+    "ai-ba-workflow": "bin/cli.js"
+  },
+  "type": "commonjs",
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ba",
+    "business-analysis",
+    "spec",
+    "harness",
+    "kiro",
+    "claude",
+    "gemini",
+    "agent",
+    "cli",
+    "scaffold"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyentanphat8694/ai-ba-workflow.git"
+  },
+  "author": "nguyentanphat8694",
+  "license": "MIT"
+}
