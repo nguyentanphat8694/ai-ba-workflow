@@ -195,6 +195,21 @@ npx ai-ba-workflow kiro
 npx github:nguyentanphat8694/ai-ba-workflow claude
 ```
 
+Chạy lại trên thư mục đã cài sẵn là an toàn: thư mục `harness/`, `inputs/`,
+`outputs/` có sẵn không gây lỗi, các file trong `harness/` được **ghi đè**
+bằng bản mới nhất từ GitHub, còn file bạn đã bỏ vào `inputs/`/`outputs/`
+được giữ nguyên.
+
+Cuối cùng CLI hỏi có muốn cài skill đọc PDF cho agent không. Chọn `y` thì
+nó chạy `npx skills add https://github.com/anthropics/skills --skill pdf`,
+chọn `n` thì kết thúc. Để không tương tác (CI), dùng cờ:
+
+```bash
+npx ai-ba-workflow kiro --pdf      # cài luôn skill PDF
+npx ai-ba-workflow kiro --no-pdf   # bỏ qua skill PDF
+# hoặc biến môi trường: AI_BA_PDF=1 / AI_BA_PDF=0
+```
+
 Các file được tải trực tiếp từ nhánh `main` của repo
 `nguyentanphat8694/ai-ba-workflow`, nên bạn luôn nhận bản harness mới nhất.
 

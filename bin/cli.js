@@ -22,6 +22,7 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const readline = require("readline");
+const { spawn } = require("child_process");
 
 // ---- Config -----------------------------------------------------------
 
@@ -142,6 +143,34 @@ function ask(question) {
   });
 }
 
+// Yes/no prompt. Returns true for yes. `defaultYes` controls the answer on
+// an empty Enter press. If stdin isn't a TTY (non-interactive run), falls
+// back to the default without blocking.
+async function askYesNo(question, defaultYes = false) {
+  if (!process.stdin.isTTY) return defaultYes;
+  const hint = defaultYes ? "(Y/n)" : "(y/N)";
+  while (true) {
+    const answer = (await ask(`${question} ${hint} `)).toLowerCase();
+    if (answer === "") return defaultYes;
+    if (["y", "yes"].includes(answer)) return true;
+    if (["n", "no"].includes(answer)) return false;
+    console.log(red("Please answer y or n.\n"));
+  }
+}
+
+// Run a command inheriting stdio so the user sees its live output.
+// Resolves with the exit code; never rejects.
+function runCommand(command, args) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: "inherit", shell: process.platform === "win32" });
+    child.on("error", (e) => {
+      console.error(red(`Failed to run ${command}: ${e.message}`));
+      resolve(1);
+    });
+    child.on("close", (code) => resolve(code == null ? 1 : code));
+  });
+}
+
 async function chooseAgent(cliArg) {
   const valid = Object.keys(AGENT_FILES);
 
@@ -233,6 +262,40 @@ async function main() {
       yellow(bold("Finished with some errors.")) +
         ` ${done}/${plan.length} files downloaded.`
     );
+  }
+
+  // 6. Optionally install the PDF reading skill.
+  // Non-interactive override: pass --pdf / --no-pdf, or set AI_BA_PDF=1/0.
+  console.log("");
+  const argv = process.argv.slice(2).map((a) => a.toLowerCase());
+  let wantPdf;
+  if (argv.includes("--pdf") || process.env.AI_BA_PDF === "1") {
+    wantPdf = true;
+  } else if (argv.includes("--no-pdf") || process.env.AI_BA_PDF === "0") {
+    wantPdf = false;
+  } else {
+    wantPdf = await askYesNo(
+      "Install the agent skill to read PDFs (anthropics/skills -> pdf)?",
+      false
+    );
+  }
+  if (wantPdf) {
+    console.log(dim("\nRunning: npx skills add https://github.com/anthropics/skills --skill pdf\n"));
+    const code = await runCommand("npx", [
+      "skills",
+      "add",
+      "https://github.com/anthropics/skills",
+      "--skill",
+      "pdf",
+    ]);
+    if (code === 0) {
+      console.log(green("\n✓ PDF skill installed."));
+    } else {
+      console.log(yellow(`\nPDF skill install exited with code ${code}. You can retry manually:`));
+      console.log(dim("  npx skills add https://github.com/anthropics/skills --skill pdf"));
+    }
+  } else {
+    console.log(dim("Skipped PDF skill install."));
   }
 
   console.log(dim("\nNext steps:"));
